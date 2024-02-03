@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*custom daisy modifications*/
+.table th:first-child{
+	position: inherit;
+}
