@@ -41,9 +41,9 @@ func (ctl *AuthCtl) List(c echo.Context) error {
 
 func (ctl *AuthCtl) Create(c echo.Context) error {
 	body := struct {
-		Username string `json:"username" validate:"required"`
-		Password string `json:"password" validate:"required"`
-		Role     string `json:"role" validate:"required,oneof=owner employee"`
+		Name  string `json:"name" validate:"required"`
+		Token string `json:"token" validate:"required"`
+		Admin int32  `json:"admin" validate:"required"`
 	}{}
 	if err := c.Bind(&body); err != nil {
 		return err
@@ -52,20 +52,14 @@ func (ctl *AuthCtl) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
-	//
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(body.Password), 10)
+	err := Service.Create(c.Request().Context(), SvcCreateParams{
+		Name:  body.Name,
+		Token: body.Token,
+		Admin: body.Admin,
+	})
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
-	_, err = datasource.Postgres.ExecContext(
-		c.Request().Context(),
-		"insert into users(username,password,role) values ($1,$2,$3)",
-		body.Username, hashedPassword, body.Role,
-	)
-	if err != nil {
-		return err
-	}
-	// ~service
 
 	return c.NoContent(http.StatusOK)
 }

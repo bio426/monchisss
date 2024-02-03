@@ -21,4 +21,5 @@ func RegisterRest(app *echo.Echo) {
 
 	storeGroup := restGroup.Group("/store")
 	storeGroup.GET("", store.Controller.List)
+	storeGroup.POST("", store.Controller.Create)
 }
