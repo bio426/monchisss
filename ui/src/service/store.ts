@@ -10,7 +10,7 @@ export default {
 
         return res.json<{ rows: any[] }>()
     },
-    async create(body: { name: string, token: string }) {
+    async create(body: { name: string, token: string, admin: number }) {
         const res = await base.post(path, { json: body })
 
         return res.status

@@ -2,7 +2,9 @@
 import { ref, reactive } from "vue"
 import { useRouter } from "vue-router";
 
+import * as tUser from "@/type/user"
 import storeService from "@/service/store"
+import userService from "@/service/user"
 import Overlay from "@/components/Overlay.vue";
 
 const router = useRouter()
@@ -15,17 +17,20 @@ const form = reactive({
     admin: 0
 })
 
-const adminOpts = [
-    { id: 1, username: "tefa" },
-    { id: 2, username: "vale" },
-    { id: 3, username: "papa" },
-]
+const adminOpts = ref<tUser.UserOpt[]>([])
+async function getOwnerOpts() {
+    loading.value = true
+    const data = await userService.listInactiveOwners()
+    adminOpts.value = data.rows
+    loading.value = false
+}
+getOwnerOpts()
 
 async function create() {
     loading.value = true
-    await storeService.create({ name: form.name, token: form.token })
+    await storeService.create({ name: form.name, token: form.token, admin: form.admin })
     loading.value = false
-    router.push({ name: "super-user" })
+    router.push({ name: "store-list" })
 }
 </script>
 

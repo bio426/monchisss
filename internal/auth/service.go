@@ -3,12 +3,11 @@ package auth
 import (
 	"context"
 	"database/sql"
-	"net/http"
+	"errors"
 	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bio426/monchisss/datasource"
@@ -17,68 +16,60 @@ import (
 
 type AuthSvc core.Service
 
-type SvcRegisterArgs struct {
-	Ctx      echo.Context
-	Username string
-	Password string
-	Role     string
-}
+var ErrUserUnauthorized = errors.New("Unauthorized user")
+var ErrUserInactive = errors.New("Inactive user")
 
-func (svc *AuthSvc) Register(args SvcRegisterArgs) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(args.Password), 10)
-	if err != nil {
-		return err
-	}
-	_, err = datasource.Postgres.ExecContext(
-		args.Ctx.Request().Context(),
-		"insert into users(username,password,role) values ($1,$2,$3)",
-		args.Username, hashedPassword, args.Role,
-	)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type SvcLoginParam struct {
+type SvcLoginParams struct {
 	Username string
 	Password string
 }
 
-func (svc *AuthSvc) Login(ctx context.Context, args SvcLoginParam) (string, error) {
+func (svc *AuthSvc) Login(c context.Context, params SvcLoginParams) (CtlLoginResponse, error) {
 	var (
 		id       int32
 		username string
 		password string
 		role     string
+		active   bool
 	)
 	row := datasource.Postgres.QueryRowContext(
-		ctx,
-		"select id, username, password, role from users where username = $1",
-		args.Username,
+		c,
+		"select id, username, password, role, active from users where username = $1",
+		params.Username,
 	)
-	if err := row.Scan(&id, &username, &password, &role); err != nil {
+	if err := row.Scan(&id, &username, &password, &role, &active); err != nil {
 		if err == sql.ErrNoRows {
-			return "", echo.NewHTTPError(http.StatusUnauthorized)
+			return CtlLoginResponse{}, ErrUserUnauthorized
 		}
-		return "", err
+		return CtlLoginResponse{}, err
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(args.Password)); err != nil {
-		return "", echo.NewHTTPError(http.StatusUnauthorized)
+	if !active {
+		return CtlLoginResponse{}, ErrUserInactive
 	}
 
-	expiryLimit := time.Now().Add(time.Hour * TokenDurationHours)
+	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(params.Password)); err != nil {
+		return CtlLoginResponse{}, ErrUserUnauthorized
+	}
+
+	expiryDate := time.Now().Add(time.Hour * TokenDurationHours)
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    strconv.Itoa(int(id)),
 		Subject:   role,
-		ExpiresAt: jwt.NewNumericDate(expiryLimit),
+		ExpiresAt: jwt.NewNumericDate(expiryDate),
 	})
 	token, err := claims.SignedString([]byte(JwtSecret))
 	if err != nil {
-		return "", err
+		return CtlLoginResponse{}, err
 	}
-	return token, nil
+
+	res := CtlLoginResponse{
+		Token:      token,
+		Role:       role,
+		ExpiryDate: expiryDate,
+	}
+
+	return res, nil
 }
 
 var Service = &AuthSvc{}

@@ -5,3 +5,8 @@ export type User = tAuth.User & {
     active: boolean
     createdAt: string
 }
+
+export type UserOpt = {
+    id: number,
+    username: string,
+}

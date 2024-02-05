@@ -5,19 +5,11 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"golang.org/x/crypto/bcrypt"
 
-	"github.com/bio426/monchisss/datasource"
 	"github.com/bio426/monchisss/internal/core"
 )
 
 type AuthCtl core.Controller
-
-const (
-	JwtSecret          = "mysecret"
-	CookieName         = "monchisss_jwt"
-	TokenDurationHours = 1
-)
 
 type CtlListRow struct {
 	Id        int32     `json:"id"`
@@ -58,7 +50,7 @@ func (ctl *AuthCtl) Create(c echo.Context) error {
 		Admin: body.Admin,
 	})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return err
 	}
 
 	return c.NoContent(http.StatusOK)

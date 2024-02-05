@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { CheckIcon, XMarkIcon, PencilIcon, TrashIcon } from "@heroicons/vue/24/solid"
+import { PencilIcon, TrashIcon } from "@heroicons/vue/24/solid"
 
-import * as tUser from "@/type/user"
-import userService from "@/service/user"
+import * as tStore from "@/type/store"
+import storeService from "@/service/store"
 import Header from "@/components/Header.vue"
 import Overlay from "@/components/Overlay.vue"
 
 const loading = ref(false)
 
-const rows = ref<tUser.User[]>([])
+const rows = ref<tStore.Store[]>([])
 
 async function getRows() {
     loading.value = true
-    const res = await userService.list()
+    const res = await storeService.list()
     rows.value = res.rows
     loading.value = false
 }
@@ -34,20 +34,18 @@ getRows()
                             <tr>
                                 <th>Name</th>
                                 <th>Admin</th>
-                                <th>Employees</th>
+                                <th>Active</th>
                                 <th>Created</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="row in rows" :key="row.id">
-                                <td>{{ row.username }}</td>
-                                <td>{{ row.role }}</td>
+                                <td>{{ row.name }}</td>
+                                <td>{{ row.admin }}</td>
                                 <td>
                                     <span v-if="row.active">yes</span>
                                     <span v-else>no</span>
-                                    <!-- <CheckIcon class="w-4 y-4 fill-success" v-if="row.active" /> -->
-                                    <!-- <XMarkIcon class="w-4 y-4 fill-error" v-else /> -->
                                 </td>
                                 <td>{{ new Date(row.createdAt).toLocaleDateString() }}</td>
                                 <td>

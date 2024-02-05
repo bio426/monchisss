@@ -4,7 +4,7 @@ create table users(
     username varchar unique,
     password varchar,
     role user_role,
-    active bool default true,
+    active bool default false,
     created_at timestamp default now()
 );
 

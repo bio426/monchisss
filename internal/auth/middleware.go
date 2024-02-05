@@ -23,8 +23,6 @@ func setContextUser(c echo.Context) {
 	c.Set(CtxUserRoleKey, userRole)
 }
 
-// el error debe ser despues de la autenticacion, successHandler no puede mandar errores, hacerlo en otro middleware
-
 func MiddlewareWithRoles(permittedRoles []string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

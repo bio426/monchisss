@@ -19,8 +19,7 @@ func (svc *AuthSvc) List(c context.Context) (CtlListResponse, error) {
 	}
 	defer rows.Close()
 
-	res := CtlListResponse{}
-
+	res := CtlListResponse{Rows: []CtlListRow{}}
 	for rows.Next() {
 		var row = CtlListRow{}
 		if err = rows.Scan(
@@ -44,6 +43,35 @@ type SvcCreateParams struct {
 }
 
 func (svc *AuthSvc) Create(c context.Context, params SvcCreateParams) error {
+	tx, err := datasource.Postgres.BeginTx(c, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.ExecContext(c,
+		"insert into stores(name,wa_token,admin_id) values ($1,$2,$3)",
+		params.Name,
+		params.Token,
+		params.Admin,
+	)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(
+		c,
+		"update users set active = $1 where id = $2",
+		true,
+		params.Admin,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
 	return nil
 }
 

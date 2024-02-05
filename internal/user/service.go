@@ -1,31 +1,57 @@
 package user
 
 import (
-	"github.com/labstack/echo/v4"
-	"golang.org/x/crypto/bcrypt"
+	"context"
 
 	"github.com/bio426/monchisss/datasource"
 	"github.com/bio426/monchisss/internal/core"
+	"golang.org/x/crypto/bcrypt"
 )
 
-type AuthSvc core.Service
+type UserSvc core.Service
 
-type SvcRegisterArgs struct {
-	Ctx      echo.Context
+func (svc *UserSvc) List(c context.Context) (CtlListResponse, error) {
+	rows, err := datasource.Postgres.QueryContext(
+		c,
+		"select id,username,role,active,created_at from users where role != 'super'",
+	)
+	if err != nil {
+		return CtlListResponse{}, err
+	}
+	defer rows.Close()
+
+	res := CtlListResponse{Rows: []CtlListRow{}}
+	for rows.Next() {
+		var row = CtlListRow{}
+		if err = rows.Scan(
+			&row.Id,
+			&row.Username,
+			&row.Role,
+			&row.Active,
+			&row.CreatedAt,
+		); err != nil {
+			return CtlListResponse{}, err
+		}
+		res.Rows = append(res.Rows, row)
+	}
+	return res, nil
+}
+
+type SvcCreateParams struct {
 	Username string
 	Password string
 	Role     string
 }
 
-func (svc *AuthSvc) Register(args SvcRegisterArgs) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(args.Password), 10)
+func (svc *UserSvc) Create(c context.Context, params SvcCreateParams) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(params.Password), 10)
 	if err != nil {
 		return err
 	}
 	_, err = datasource.Postgres.ExecContext(
-		args.Ctx.Request().Context(),
+		c,
 		"insert into users(username,password,role) values ($1,$2,$3)",
-		args.Username, hashedPassword, args.Role,
+		params.Username, hashedPassword, params.Role,
 	)
 	if err != nil {
 		return err
@@ -33,4 +59,29 @@ func (svc *AuthSvc) Register(args SvcRegisterArgs) error {
 	return nil
 }
 
-var Service = &AuthSvc{}
+func (svc *UserSvc) ListInactiveOwners(c context.Context) (CtlInactiveAdminsResponse, error) {
+	rows, err := datasource.Postgres.QueryContext(
+		c,
+		"select id, username from users where active = false and role = 'owner'",
+	)
+	if err != nil {
+		return CtlInactiveAdminsResponse{}, err
+	}
+	defer rows.Close()
+
+	res := CtlInactiveAdminsResponse{Rows: []CtlInactiveAdminsRow{}}
+
+	for rows.Next() {
+		var row = CtlInactiveAdminsRow{}
+		if err = rows.Scan(
+			&row.Id,
+			&row.Username,
+		); err != nil {
+			return CtlInactiveAdminsResponse{}, err
+		}
+		res.Rows = append(res.Rows, row)
+	}
+	return res, nil
+}
+
+var Service = &UserSvc{}
