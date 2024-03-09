@@ -3,7 +3,6 @@ package auth
 import (
 	"net/http"
 	"slices"
-	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo-jwt/v4"
@@ -13,16 +12,17 @@ import (
 const CtxTokenKey = "userToken"
 const CtxUserIdKey = "userId"
 const CtxUserRoleKey = "userRole"
+const CtxUserStoreKey = "userStore"
 
 func setContextUser(c echo.Context) {
-	user := c.Get(CtxTokenKey).(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	userId, _ := claims.GetIssuer()
-	userRole, _ := claims.GetSubject()
-	c.Set(CtxUserIdKey, userId)
-	c.Set(CtxUserRoleKey, userRole)
+	token := c.Get(CtxTokenKey).(*jwt.Token)
+	claims, _ := token.Claims.(*CustomClaims)
+	c.Set(CtxUserIdKey, claims.Id)
+	c.Set(CtxUserRoleKey, claims.Role)
+	c.Set(CtxUserStoreKey, claims.Store)
 }
 
+// This should be only used after the auth.Middleware has processed the request
 func MiddlewareWithRoles(permittedRoles []string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -35,26 +35,12 @@ func MiddlewareWithRoles(permittedRoles []string) echo.MiddlewareFunc {
 	}
 }
 
-func MiddlewareWithSkipper(skippedPaths []string) echo.MiddlewareFunc {
-	return echojwt.WithConfig(echojwt.Config{
-		SigningKey:     []byte(JwtSecret),
-		TokenLookup:    "cookie:" + CookieName,
-		ContextKey:     CtxTokenKey,
-		SuccessHandler: setContextUser,
-		Skipper: func(c echo.Context) bool {
-			for _, path := range skippedPaths {
-				if strings.HasSuffix(c.Path(), path) {
-					return true
-				}
-			}
-			return false
-		},
-	})
-}
-
 var Middleware echo.MiddlewareFunc = echojwt.WithConfig(echojwt.Config{
 	SigningKey:     []byte(JwtSecret),
 	TokenLookup:    "cookie:" + CookieName,
 	ContextKey:     CtxTokenKey,
 	SuccessHandler: setContextUser,
+	NewClaimsFunc: func(c echo.Context) jwt.Claims {
+		return &CustomClaims{}
+	},
 })

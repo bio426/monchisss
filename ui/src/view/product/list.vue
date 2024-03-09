@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { CheckIcon, XMarkIcon, PencilIcon, TrashIcon } from "@heroicons/vue/24/solid"
+import { PencilIcon, TrashIcon } from "@heroicons/vue/24/solid";
 
-import * as tUser from "@/type/user"
-import userService from "@/service/user"
-import Header from "@/components/Header.vue"
-import Overlay from "@/components/Overlay.vue"
+import * as tProduct from "@/type/product"
+import productService from "@/service/product"
+import Header from "@/components/Header.vue";
+import Overlay from "@/components/Overlay.vue";
 
 const loading = ref(false)
 
-const rows = ref<tUser.User[]>([])
+const rows = ref<tProduct.Product[]>([])
 
 async function getRows() {
     loading.value = true
-    const res = await userService.list()
+    const res = await productService.list()
     rows.value = res.rows
     loading.value = false
 }
@@ -23,33 +23,26 @@ getRows()
 <template>
     <div class="relative min-h-screen w-full">
         <div class="w-11/12 mx-auto">
-            <Header title="User" />
+            <Header title="Product" />
             <div class="mb-4">
-                <router-link class="btn btn-primary" :to="{ name: 'super-user-create' }">Create</router-link>
+                <router-link class="btn btn-primary" :to="{ name: 'product-create' }">Create</router-link>
             </div>
             <Overlay :show="loading">
                 <div class="overflow-x-auto">
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Username</th>
-                                <th>Role</th>
-                                <th>Active</th>
-                                <th>Created</th>
+                                <th>Name</th>
+                                <th>Price</th>
+                                <th>Category</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="row in rows" :key="row.id">
-                                <td>{{ row.username }}</td>
-                                <td>{{ row.role }}</td>
-                                <td>
-                                    <span v-if="row.active">yes</span>
-                                    <span v-else>no</span>
-                                    <!-- <CheckIcon class="w-4 y-4 fill-success" v-if="row.active" /> -->
-                                    <!-- <XMarkIcon class="w-4 y-4 fill-error" v-else /> -->
-                                </td>
-                                <td>{{ new Date(row.createdAt).toLocaleDateString() }}</td>
+                            <tr v-for="row in rows" :key="row.name">
+                                <td>{{ row.name }}</td>
+                                <td>{{ row.price }}</td>
+                                <td>{{ row.category }}</td>
                                 <td>
                                     <div class="flex gap-2">
                                         <button class="btn btn-xs btn-square" title="Edit">

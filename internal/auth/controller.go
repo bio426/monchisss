@@ -12,7 +12,7 @@ import (
 const (
 	JwtSecret          = "mysecret"
 	CookieName         = "monchisss_jwt"
-	TokenDurationHours = 1
+	TokenDurationHours = 12
 )
 
 type AuthCtl core.Controller

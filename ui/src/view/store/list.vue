@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { PencilIcon, TrashIcon } from "@heroicons/vue/24/solid"
+import { EyeIcon, PencilIcon, TrashIcon } from "@heroicons/vue/24/solid"
 
-import * as tStore from "@/type/store"
 import storeService from "@/service/store"
 import Header from "@/components/Header.vue"
 import Overlay from "@/components/Overlay.vue"
+import router from "@/router"
 
 const loading = ref(false)
 
-const rows = ref<tStore.Store[]>([])
+const rows = ref<any[]>([])
 
 async function getRows() {
     loading.value = true
@@ -18,6 +18,10 @@ async function getRows() {
     loading.value = false
 }
 getRows()
+
+function goToDetail(id: number) {
+    router.push({ name: "store-detail", params: { id } })
+}
 </script>
 
 <template>
@@ -34,7 +38,6 @@ getRows()
                             <tr>
                                 <th>Name</th>
                                 <th>Admin</th>
-                                <th>Active</th>
                                 <th>Created</th>
                                 <th>Action</th>
                             </tr>
@@ -43,13 +46,12 @@ getRows()
                             <tr v-for="row in rows" :key="row.id">
                                 <td>{{ row.name }}</td>
                                 <td>{{ row.admin }}</td>
-                                <td>
-                                    <span v-if="row.active">yes</span>
-                                    <span v-else>no</span>
-                                </td>
                                 <td>{{ new Date(row.createdAt).toLocaleDateString() }}</td>
                                 <td>
                                     <div class="flex gap-2">
+                                        <button class="btn btn-xs btn-square" title="Detail" @click="goToDetail(row.id)">
+                                            <EyeIcon class="w-4 y-4 fill-info" />
+                                        </button>
                                         <button class="btn btn-xs btn-square" title="Edit">
                                             <PencilIcon class="w-4 y-4 fill-warning" />
                                         </button>

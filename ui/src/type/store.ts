@@ -1,7 +1,7 @@
-export type Store = {
+export type User = {
     id: number
-    name: string
-    admin: string
+    username: string
+    role: string
     active: boolean
     createdAt: string
 }

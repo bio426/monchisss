@@ -5,8 +5,8 @@ import useToast from "@/composables/useToast"
 
 const base = ky.create({
     prefixUrl: config.apiUrl,
-    hooks:
-    {
+    credentials: "include",
+    hooks:{
         beforeError: [
             err => {
                 if (err.response.status >= 500) {

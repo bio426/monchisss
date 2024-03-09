@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -33,8 +34,20 @@ func main() {
 			AllowOrigins:     []string{"http://localhost:5173"},
 			AllowCredentials: true,
 		}))
-		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-			Format: "${method} ${uri} ${status}\n",
+		e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+			LogMethod:   true,
+			LogURI:      true,
+			LogStatus:   true,
+			LogError:    true,
+			HandleError: true,
+			LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+				if v.Error == nil {
+					fmt.Printf("%s %s %d\n", v.Method, v.URI, v.Status)
+				} else {
+					fmt.Printf("%s %s %d %s\n", v.Method, v.URI, v.Status, v.Error.Error())
+				}
+				return nil
+			},
 		}))
 	}
 

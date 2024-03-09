@@ -3,33 +3,34 @@ package store
 import (
 	"context"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/bio426/monchisss/datasource"
 	"github.com/bio426/monchisss/internal/core"
 )
 
-type AuthSvc core.Service
+type StoreSvc core.Service
 
-func (svc *AuthSvc) List(c context.Context) (CtlListResponse, error) {
+func (svc *StoreSvc) List(c context.Context) (*CtlListResponse, error) {
 	rows, err := datasource.Postgres.QueryContext(
 		c,
-		"select s.id,s.name,s.active,s.created_at,u.username from stores s join users u on u.id = s.admin_id",
+		"select s.id,s.name,s.created_at,u.username from stores s join users u on u.store = s.id where u.role != 'super'",
 	)
 	if err != nil {
-		return CtlListResponse{}, err
+		return nil, err
 	}
 	defer rows.Close()
 
-	res := CtlListResponse{Rows: []CtlListRow{}}
+	res := &CtlListResponse{Rows: []CtlListRow{}}
 	for rows.Next() {
 		var row = CtlListRow{}
 		if err = rows.Scan(
 			&row.Id,
 			&row.Name,
-			&row.Active,
 			&row.CreatedAt,
 			&row.Admin,
 		); err != nil {
-			return CtlListResponse{}, err
+			return nil, err
 		}
 		res.Rows = append(res.Rows, row)
 	}
@@ -37,32 +38,39 @@ func (svc *AuthSvc) List(c context.Context) (CtlListResponse, error) {
 }
 
 type SvcCreateParams struct {
-	Name  string
-	Token string
-	Admin int32
+	Name          string
+	Token         string
+	OwnerUsername string
+	OwnerPassword string
 }
 
-func (svc *AuthSvc) Create(c context.Context, params SvcCreateParams) error {
+func (svc *StoreSvc) Create(c context.Context, params SvcCreateParams) error {
 	tx, err := datasource.Postgres.BeginTx(c, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(c,
-		"insert into stores(name,wa_token,admin_id) values ($1,$2,$3)",
+	// insert store
+	var storeId int32
+	row := tx.QueryRowContext(c,
+		"insert into stores(name,wa_token) values ($1,$2) returning id",
 		params.Name,
 		params.Token,
-		params.Admin,
 	)
+	if err := row.Scan(&storeId); err != nil {
+		return err
+	}
+
+	// insert owner user
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(params.OwnerPassword), 10)
 	if err != nil {
 		return err
 	}
 	_, err = tx.ExecContext(
 		c,
-		"update users set active = $1 where id = $2",
-		true,
-		params.Admin,
+		"insert into users(username,password,role,store) values ($1,$2,$3,$4)",
+		params.OwnerUsername, hashedPassword, "owner", storeId,
 	)
 	if err != nil {
 		return err
@@ -75,4 +83,54 @@ func (svc *AuthSvc) Create(c context.Context, params SvcCreateParams) error {
 	return nil
 }
 
-var Service = &AuthSvc{}
+func (svc *StoreSvc) ListUsers(c context.Context, storeId int32) (*CtlListUsersResponse, error) {
+	rows, err := datasource.Postgres.QueryContext(
+		c,
+		"select id,username,role,active,created_at from users where role != 'super' and store = $1",
+		storeId,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	res := &CtlListUsersResponse{}
+	for rows.Next() {
+		var row = CtlListUsersRow{}
+		if err = rows.Scan(
+			&row.Id,
+			&row.Username,
+			&row.Role,
+			&row.Active,
+			&row.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		res.Rows = append(res.Rows, row)
+	}
+	return res, nil
+}
+
+type SvcCreateUserParams struct {
+	Username string
+	Password string
+	Role     string
+}
+
+func (svc *StoreSvc) CreateUser(c context.Context, params SvcCreateUserParams) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(params.Password), 10)
+	if err != nil {
+		return err
+	}
+	_, err = datasource.Postgres.ExecContext(
+		c,
+		"insert into users(username,password,role) values ($1,$2,$3)",
+		params.Username, hashedPassword, params.Role,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+var Service = &StoreSvc{}

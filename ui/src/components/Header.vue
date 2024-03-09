@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { } from "vue"
 import { useRouter } from "vue-router"
-import { Bars3Icon, HomeIcon, UsersIcon, BuildingStorefrontIcon } from "@heroicons/vue/24/solid"
+import { Bars3Icon, HomeIcon, CubeIcon, BuildingStorefrontIcon } from "@heroicons/vue/24/solid"
 
 import authService from "@/service/auth"
 import useAuthStore from "@/store/auth"
@@ -35,18 +35,42 @@ async function logout() {
                     <!-- Super user modules -->
                     <template v-if="authStore.user?.role == 'super'">
                         <li>
-                            <router-link active-class="active" :to="{ name: 'super-user' }">
-                                <UsersIcon class="w-4" />
-                                User
-                            </router-link>
-                        </li>
-                        <li>
                             <router-link active-class="active" :to="{ name: 'store' }">
                                 <BuildingStorefrontIcon class="w-4" />
                                 Store
                             </router-link>
                         </li>
+                        <li v-if="0">
+                            <details open>
+                                <summary>
+                                    <BuildingStorefrontIcon class="w-4" />
+                                    Store
+                                </summary>
+                                <ul>
+                                    <li>
+                                        <router-link active-class="active" :to="{ name: 'store-list' }">
+                                            List
+                                        </router-link>
+                                    </li>
+                                    <li>
+                                        <router-link active-class="active" :to="{ name: 'store' }">
+                                            User
+                                        </router-link>
+                                    </li>
+                                </ul>
+                            </details>
+                        </li>
                     </template>
+                    <!-- Owner user modules -->
+                    <template v-if="authStore.user?.role == 'owner'">
+                        <li>
+                            <router-link active-class="active" :to="{ name: 'product' }">
+                                <CubeIcon class="w-4" />
+                                Product
+                            </router-link>
+                        </li>
+                    </template>
+
                 </ul>
             </div>
         </div>

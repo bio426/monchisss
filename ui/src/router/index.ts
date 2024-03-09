@@ -3,8 +3,8 @@ import type { RouteLocationNormalized } from 'vue-router'
 
 import useAuthStore from "@/store/auth"
 import useToast from "@/composables/useToast"
-import superRouter from "./super"
 import store from "./store"
+import product from "./product"
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -20,19 +20,24 @@ const router = createRouter({
             component: () => import('@/view/login.vue')
         },
         {
+            path: '/order/:id',
+            name: 'order',
+            component: () => import('@/view/order.vue')
+        },
+        {
             path: "/:pathMatch(.*)*",
             name: "not-found",
             component: () => import("@/view/not-found.vue"),
         },
-        superRouter,
         store,
+        product,
     ]
 })
 
 router.beforeEach((to, _) => {
     const authStore = useAuthStore()
     const routeName = to.name as string
-    const publicRoutes = ["login", "not-found"]
+    const publicRoutes = ["login", "not-found", "order"]
 
     if (publicRoutes.includes(routeName)) {
         if (authStore.authenticated && routeName == "login") {

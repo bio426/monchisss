@@ -16,6 +16,11 @@ const routes: RouteRecordRaw = {
             name: "store-create",
             component: () => import("@/view/store/create.vue")
         },
+        {
+            path: "detail/:id",
+            name: "store-detail",
+            component: () => import("@/view/store/detail.vue")
+        },
     ]
 }
 

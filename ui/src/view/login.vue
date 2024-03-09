@@ -42,7 +42,7 @@ async function login() {
 </script>
 
 <template>
-    <div class="relative w-screen min-h-screen ">
+    <div class="relative min-h-screen ">
         <div class="w-11/12 mx-auto">
             <h1 class="py-8 text-2xl font-bold text-center">Login</h1>
             <Overlay :show="loading">
